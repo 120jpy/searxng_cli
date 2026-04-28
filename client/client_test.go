@@ -17,6 +17,9 @@ func TestSearchSuccess(t *testing.T) {
 		if r.URL.Query().Get("q") != "test query" {
 			t.Fatalf("expected q=test query, got %q", r.URL.Query().Get("q"))
 		}
+		if r.Header.Get("User-Agent") != "searxng-cli/1.0" {
+			t.Fatalf("expected User-Agent searxng-cli/1.0, got %q", r.Header.Get("User-Agent"))
+		}
 		resp := searxngAPIResponse{
 			Results: []struct {
 				Title    string `json:"title"`
@@ -72,6 +75,23 @@ func TestSearchBadURL(t *testing.T) {
 	_, err := c.Search(SearchParams{Query: "test"})
 	if err == nil {
 		t.Fatal("expected error for bad URL")
+	}
+}
+
+func TestSearchTrailingSlash(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/search" {
+			t.Fatalf("expected /search, got %q", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(searxngAPIResponse{})
+	}))
+	defer ts.Close()
+
+	c := New(ts.URL+"/", 10)
+	_, err := c.Search(SearchParams{Query: "test"})
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 

@@ -93,8 +93,12 @@ func formatJSON(results []model.Result) string {
 }
 
 func truncate(s string, maxLen int) string {
-	if len(s) > maxLen {
-		return s[:maxLen-3] + "…"
+	runes := []rune(s)
+	if len(runes) > maxLen {
+		if maxLen <= 3 {
+			return string(runes[:maxLen])
+		}
+		return string(runes[:maxLen-1]) + "…"
 	}
 	return s
 }

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"sort"
 
@@ -32,15 +33,18 @@ var configSetInstanceCmd = &cobra.Command{
 	Short: "Add or update an instance",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		name, url := args[0], args[1]
-		cfg.Instances[name] = config.Instance{URL: url}
+		name, rawURL := args[0], args[1]
+		if _, err := url.ParseRequestURI(rawURL); err != nil {
+			return fmt.Errorf("invalid URL %q: %w", rawURL, err)
+		}
+		cfg.Instances[name] = config.Instance{URL: rawURL}
 		if len(cfg.Instances) == 1 {
 			cfg.DefaultInstance = name
 		}
 		if err := cfg.Save(); err != nil {
 			return fmt.Errorf("failed to save: %w", err)
 		}
-		fmt.Fprintf(os.Stderr, "Instance %q set to %s\n", name, url)
+		fmt.Fprintf(os.Stderr, "Instance %q set to %s\n", name, rawURL)
 		return nil
 	},
 }

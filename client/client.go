@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/tomo/searxng-cli/model"
@@ -46,7 +47,8 @@ type searxngAPIResponse struct {
 }
 
 func (c *Client) Search(params SearchParams) ([]model.Result, error) {
-	u, err := url.Parse(c.BaseURL + "/search")
+	path := strings.TrimRight(c.BaseURL, "/") + "/search"
+	u, err := url.Parse(path)
 	if err != nil {
 		return nil, fmt.Errorf("invalid base URL: %w", err)
 	}
@@ -70,7 +72,13 @@ func (c *Client) Search(params SearchParams) ([]model.Result, error) {
 	}
 	u.RawQuery = q.Encode()
 
-	resp, err := c.HTTPClient.Get(u.String())
+	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("create request: %w", err)
+	}
+	req.Header.Set("User-Agent", "searxng-cli/1.0")
+
+	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}

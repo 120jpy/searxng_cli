@@ -82,15 +82,21 @@ func TestTruncate(t *testing.T) {
 		input   string
 		maxLen  int
 		wantLen int
+		want    string
 	}{
-		{"short", 10, 5},
-		{"this is a long string", 10, 10},
-		{"", 5, 0},
+		{"short", 10, 5, "short"},
+		{"this is a long string", 10, 10, "this is a…"},
+		{"", 5, 0, ""},
+		{"こんにちは世界", 10, 7, "こんにちは世界"},
+		{"こんにちは世界", 5, 5, "こんにち…"},
 	}
 	for _, tc := range tests {
 		got := truncate(tc.input, tc.maxLen)
-		if len(got) != tc.wantLen {
-			t.Fatalf("truncate(%q, %d) = %q (len %d), want len %d", tc.input, tc.maxLen, got, len(got), tc.wantLen)
+		if len([]rune(got)) != tc.wantLen {
+			t.Fatalf("truncate(%q, %d) = %q (rune len %d), want rune len %d", tc.input, tc.maxLen, got, len([]rune(got)), tc.wantLen)
+		}
+		if got != tc.want {
+			t.Fatalf("truncate(%q, %d) = %q, want %q", tc.input, tc.maxLen, got, tc.want)
 		}
 	}
 }
