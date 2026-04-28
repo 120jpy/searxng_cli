@@ -8,19 +8,24 @@ import (
 	"github.com/tomo/searxng-cli/config"
 )
 
+const versionTemplate = "searxng-cli {{.Version}} (commit: {{.Commit}}, built: {{.Date}})\n"
+
 var (
 	cfg         *config.Config
 	cfgFileFlag string
+	Version     = "dev"
+	Commit      = "none"
+	Date        = "unknown"
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "searxng-cli",
-	Short: "SearXNG CLI - Web search via SearXNG instances",
-	Long: `A CLI tool to query SearXNG instances and output results
-in LLM-friendly formats.`,
+	Use:     "searxng-cli",
+	Short:   "SearXNG CLI - Web search via SearXNG instances",
+	Long:    `A CLI tool to query SearXNG instances and output results in LLM-friendly formats.`,
+	Version: Version,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		// Skip config loading for 'config init' — no config file exists yet
-		if isConfigInitCmd(cmd) {
+		// Skip config loading for version and config init
+		if isConfigInitCmd(cmd) || cmd.Name() == "version" {
 			return nil
 		}
 		var err error
@@ -48,4 +53,5 @@ func isConfigInitCmd(cmd *cobra.Command) bool {
 
 func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFileFlag, "config", "", "config file path (default ~/.searxng_cli/config.yaml)")
+	rootCmd.SetVersionTemplate(fmt.Sprintf("searxng-cli {{.Version}} (commit: %s, built: %s)\n", Commit, Date))
 }
