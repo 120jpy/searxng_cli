@@ -55,6 +55,17 @@ searxng-cli search "<query>" --instance myinst
 - `--time-range day` - 最新情報取得時
 - `-t 60` - SearXNGが遅い場合のタイムアウト延長
 
+## Playwright 連携
+
+`-f urls` でURL一覧を取得し、Playwright SKILLと組み合わせて各ページの詳細コンテンツを取得すると、検索結果の深掘り調査が可能。
+
+推奨パイプライン:
+1. `searxng-cli search "<query>" -f urls --max-results 5` で対象URL一覧を取得
+2. Playwright SKILLの `page_content()` 等で各URLの本文をスクレイピング
+3. 取得したコンテンツをLLMに渡して詳細分析
+
+出力形式 `-f compact` と `-f json` は LLM への入力としても適している。
+
 ## 設定
 初回実行前に設定が必要:
 ```bash
