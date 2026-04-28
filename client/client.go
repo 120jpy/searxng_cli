@@ -90,7 +90,11 @@ func (c *Client) Search(params SearchParams) ([]model.Result, error) {
 		if len(truncated) > 200 {
 			truncated = truncated[:200]
 		}
-		return nil, fmt.Errorf("API returned %d: %s", resp.StatusCode, string(truncated))
+		err := fmt.Errorf("API returned %d: %s", resp.StatusCode, string(truncated))
+		if resp.StatusCode == http.StatusTooManyRequests {
+			err = fmt.Errorf("API returned %d: %w\n  hint: check SearXNG limiter settings (limiter: false in settings.yml)", resp.StatusCode, err)
+		}
+		return nil, err
 	}
 
 	var apiResp searxngAPIResponse
