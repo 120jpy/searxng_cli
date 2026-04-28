@@ -19,6 +19,10 @@ var rootCmd = &cobra.Command{
 	Long: `A CLI tool to query SearXNG instances and output results
 in LLM-friendly formats.`,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		// Skip config loading for 'config init' — no config file exists yet
+		if isConfigInitCmd(cmd) {
+			return nil
+		}
 		var err error
 		if cfgFileFlag != "" {
 			cfg, err = config.LoadFrom(cfgFileFlag)
@@ -36,6 +40,10 @@ func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
+}
+
+func isConfigInitCmd(cmd *cobra.Command) bool {
+	return cmd.Name() == "init" && cmd.Parent() != nil && cmd.Parent().Name() == "config"
 }
 
 func init() {
