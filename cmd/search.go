@@ -17,6 +17,7 @@ var searchFlags struct {
 	pageno     int
 	instance   string
 	maxResults int
+	timeout    int
 }
 
 var searchCmd = &cobra.Command{
@@ -40,7 +41,9 @@ var searchCmd = &cobra.Command{
 			return fmt.Errorf("invalid format %q, valid: %v", searchFlags.format, formatter.ValidFormats)
 		}
 
-		c := client.New(inst.URL)
+		fmt.Fprintf(cmd.ErrOrStderr(), "Searching %s ... ", inst.URL)
+
+		c := client.New(inst.URL, searchFlags.timeout)
 		results, err := c.Search(client.SearchParams{
 			Query:      args[0],
 			Categories: searchFlags.categories,
@@ -50,8 +53,10 @@ var searchCmd = &cobra.Command{
 			Pageno:     searchFlags.pageno,
 		})
 		if err != nil {
+			fmt.Fprintln(cmd.ErrOrStderr(), "error")
 			return fmt.Errorf("search failed: %w", err)
 		}
+		fmt.Fprintf(cmd.ErrOrStderr(), "%d results\n", len(results))
 
 		out := formatter.FormatResults(results, formatter.Format(searchFlags.format), searchFlags.maxResults)
 		fmt.Print(out)
@@ -68,5 +73,6 @@ func init() {
 	searchCmd.Flags().IntVarP(&searchFlags.pageno, "pageno", "n", 1, "Page number")
 	searchCmd.Flags().StringVar(&searchFlags.instance, "instance", "", "Instance name (default from config)")
 	searchCmd.Flags().IntVar(&searchFlags.maxResults, "max-results", 0, "Max results to display (0 = all)")
+	searchCmd.Flags().IntVarP(&searchFlags.timeout, "timeout", "t", 30, "Request timeout in seconds")
 	rootCmd.AddCommand(searchCmd)
 }

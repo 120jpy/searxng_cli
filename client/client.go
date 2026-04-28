@@ -16,11 +16,12 @@ type Client struct {
 	HTTPClient *http.Client
 }
 
-func New(baseURL string) *Client {
+func New(baseURL string, timeout int) *Client {
+	t := time.Duration(timeout) * time.Second
 	return &Client{
 		BaseURL: baseURL,
 		HTTPClient: &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout: t,
 		},
 	}
 }

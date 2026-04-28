@@ -34,7 +34,7 @@ func TestSearchSuccess(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := New(ts.URL)
+	c := New(ts.URL, 10)
 	results, err := c.Search(SearchParams{Query: "test query"})
 	if err != nil {
 		t.Fatal(err)
@@ -60,7 +60,7 @@ func TestSearchServerError(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := New(ts.URL)
+	c := New(ts.URL, 10)
 	_, err := c.Search(SearchParams{Query: "test"})
 	if err == nil {
 		t.Fatal("expected error")
@@ -68,7 +68,7 @@ func TestSearchServerError(t *testing.T) {
 }
 
 func TestSearchBadURL(t *testing.T) {
-	c := New("http://[::1]:nonexistent")
+	c := New("http://[::1]:nonexistent", 10)
 	_, err := c.Search(SearchParams{Query: "test"})
 	if err == nil {
 		t.Fatal("expected error for bad URL")
@@ -85,7 +85,7 @@ func TestSearchCategoriesParam(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := New(ts.URL)
+	c := New(ts.URL, 10)
 	_, err := c.Search(SearchParams{Query: "test", Categories: "general,news"})
 	if err != nil {
 		t.Fatal(err)
@@ -102,7 +102,7 @@ func TestSearchEnginesParam(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := New(ts.URL)
+	c := New(ts.URL, 10)
 	_, err := c.Search(SearchParams{Query: "test", Engines: "google,wikipedia"})
 	if err != nil {
 		t.Fatal(err)
@@ -122,7 +122,7 @@ func TestSearchRedirectFollowed(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := New(ts.URL + "/redirect")
+	c := New(ts.URL+"/redirect", 10)
 	_, err := c.Search(SearchParams{Query: "test"})
 	if err != nil {
 		t.Fatal(err)
