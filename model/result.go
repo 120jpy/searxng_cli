@@ -6,4 +6,5 @@ type Result struct {
 	Snippet  string `json:"s"`
 	Category string `json:"c"`
 	Engine   string `json:"e"`
+	Body     string `json:"b,omitempty"`
 }
