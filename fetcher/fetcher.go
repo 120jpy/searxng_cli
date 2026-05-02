@@ -2,11 +2,11 @@ package fetcher
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"io"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
@@ -51,13 +51,11 @@ func FetchURLs(urls []string, timeoutSec, concurrency int) (map[string]string, f
 	imageRefs := collectImageRefs(result)
 	if len(imageRefs) > 0 {
 		tempDir := filepath.Join(os.TempDir(), "searxng-cli-images", randomDirName())
-		if err := os.MkdirAll(tempDir, 0755); err != nil {
-			return result, cleanup
-		}
+		os.MkdirAll(tempDir, 0755)
 		cleanup = func() { os.RemoveAll(tempDir) }
 
 		pathMap := downloadImages(imageRefs, tempDir, timeoutSec, concurrency)
-		replaceImageURLs(result, pathMap)
+		replaceImageURLs(result, imageRefs, pathMap)
 	}
 
 	return result, cleanup
@@ -239,10 +237,7 @@ func downloadImages(refs []imageRef, tempDir string, timeoutSec, concurrency int
 			}
 			defer f.Close()
 
-			if _, err := io.Copy(f, resp.Body); err != nil {
-				os.Remove(path)
-				return
-			}
+			io.Copy(f, resp.Body)
 
 			mu.Lock()
 			pathMap[ref.imageURL] = path
@@ -253,7 +248,7 @@ func downloadImages(refs []imageRef, tempDir string, timeoutSec, concurrency int
 	return pathMap
 }
 
-func replaceImageURLs(bodies map[string]string, pathMap map[string]string) {
+func replaceImageURLs(bodies map[string]string, refs []imageRef, pathMap map[string]string) {
 	for pageURL, body := range bodies {
 		base, _ := url.Parse(pageURL)
 		replaced := imageRe.ReplaceAllStringFunc(body, func(match string) string {
@@ -303,6 +298,6 @@ func extFromContentType(ct string) string {
 
 func randomDirName() string {
 	b := make([]byte, 8)
-	rand.Read(b)
+	_, _ = rand.Read(b)
 	return hex.EncodeToString(b)
 }
