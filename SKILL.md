@@ -35,6 +35,12 @@ searxng-cli search "<query>" -t 60
 
 # インスタンス切り替え
 searxng-cli search "<query>" --instance myinst
+
+# JSレンダリングでページ本文をMarkdown取得（全結果）
+searxng-cli search "<query>" --fetch
+
+# タイムアウト・並列数指定
+searxng-cli search "<query>" --fetch --fetch-timeout 15 --fetch-concurrency 5
 ```
 
 ## 出力形式（デフォルト: compact JSONL）
@@ -43,6 +49,14 @@ searxng-cli search "<query>" --instance myinst
 ```jsonl
 {"t":"Title","u":"https://...","s":"snippet","c":"general","e":"google"}
 ```
+
+`--fetch` 指定時は各結果に本文（Markdown）が `b` キーで追加される：
+
+```jsonl
+{"t":"Title","u":"https://...","s":"snippet","c":"general","e":"google","b":"# Page Title\\n\\nFull page content..."}
+```
+
+`-f json --fetch` 時は `body` フィールドが追加される。
 
 ## 動作
 - stderr に `Searching <url> ... N results` と進捗を表示（stdout は結果のみ）
@@ -64,7 +78,10 @@ searxng-cli search "<query>" --instance myinst
 2. Playwright SKILLの `page_content()` 等で各URLの本文をスクレイピング
 3. 取得したコンテンツをLLMに渡して詳細分析
 
-出力形式 `-f compact` と `-f json` は LLM への入力としても適している。
+**注**: `--fetch` フラグを使えば、SearXNG CLI単体でJSレンダリング＋本文Markdown取得が可能。Chrome/Chromiumが必要（初回自動ダウンロード）。
+外部ツール不要で完結するため、Playwright連携より推奨。
+
+出力形式 `-f compact --fetch` / `-f json --fetch` は LLM への入力としても適している。
 
 ## 設定
 初回実行前に設定が必要:
@@ -89,3 +106,6 @@ searxng-cli config list                       # 設定一覧
 | `--instance` | | 設定のdefault | 使用するインスタンス名 |
 | `--max-results` | | `0` (全て) | 表示件数上限 |
 | `--timeout` | `-t` | `30` | リクエストタイムアウト(秒) |
+| `--fetch` | | `false` | ページ本文をJSレンダリング＋Markdownで取得 |
+| `--fetch-timeout` | | `10` | 1ページあたりの取得タイムアウト(秒) |
+| `--fetch-concurrency` | | `3` | 並列取得数 |
