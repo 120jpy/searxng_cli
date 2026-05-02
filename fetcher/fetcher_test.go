@@ -77,7 +77,7 @@ func TestDownloadAndReplace(t *testing.T) {
 
 	tempDir := t.TempDir()
 	pathMap := downloadImages(refs, tempDir, 5, 1)
-	replaceImageURLs(bodies, refs, pathMap)
+	replaceImageURLs(bodies, pathMap)
 
 	body := bodies["https://example.com/page"]
 	if !strings.Contains(body, tempDir) {
@@ -100,7 +100,7 @@ func TestDownloadFailure(t *testing.T) {
 
 	tempDir := t.TempDir()
 	pathMap := downloadImages(refs, tempDir, 1, 1)
-	replaceImageURLs(bodies, refs, pathMap)
+	replaceImageURLs(bodies, pathMap)
 
 	body := bodies["https://example.com/page"]
 	if !strings.Contains(body, "[image failed:") {
