@@ -77,14 +77,42 @@ func fetchPage(browser *rod.Browser, rawURL string, timeoutSec int) string {
 			'[class*="menu"]', '[id*="menu"]',
 			'[class*="footer"]', '[id*="footer"]',
 			'[class*="cookie"]', '[id*="cookie"]',
+			'[class*="widget"]', '[id*="widget"]',
+			'[class*="social"]', '[id*="social"]',
+			'[class*="share"]', '[id*="share"]',
+			'[class*="tracking"]', '[id*="tracking"]',
+			'[class*="analytics"]', '[id*="analytics"]',
+			'[class*="pixel"]', '[id*="pixel"]',
+			'[class*="banner"]', '[id*="banner"]',
+			'[class*="skip"]', '[id*="skip"]',
+			'[class*="accessibility"]', '[id*="accessibility"]',
+			'[class*="popup"]', '[id*="popup"]',
+			'[class*="overlay"]', '[id*="overlay"]',
+			'[class*="modal"]', '[id*="modal"]',
 			'aside', 'dialog',
 			'nav', 'header', 'footer',
-			'script', 'style', 'noscript', 'svg',
-			'form', 'button', 'input', 'select', 'textarea'
+			'script', 'style', 'noscript', 'svg', 'canvas',
+			'form', 'button', 'input', 'select', 'textarea',
+			'iframe',
+			'img[src*="pixel"]', 'img[src*="track"]',
+			'img[src*="bat.bing"]', 'img[src*="doubleclick"]',
+			'img[height="1"]', 'img[width="1"]',
 		];
 		for (const sel of selectors) {
 			for (const el of document.querySelectorAll(sel)) {
 				if (el.tagName === 'BODY') continue;
+				if (el.querySelector('article, main, [role="main"]')) {
+					el.removeAttribute('class');
+					el.removeAttribute('id');
+					continue;
+				}
+				el.remove();
+			}
+		}
+		for (const el of document.querySelectorAll('*')) {
+			const s = window.getComputedStyle(el);
+			if (el.tagName === 'BODY') continue;
+			if (s.display === 'none' || s.visibility === 'hidden') {
 				if (el.querySelector('article, main, [role="main"]')) {
 					el.removeAttribute('class');
 					el.removeAttribute('id');
