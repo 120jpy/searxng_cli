@@ -89,14 +89,8 @@ func TestDownloadAndReplace(t *testing.T) {
 }
 
 func TestDownloadFailure(t *testing.T) {
-	imgServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "image/png")
-		w.Write([]byte("data"))
-	}))
-	imgServer.Close()
-
 	bodies := map[string]string{
-		"https://example.com/page": fmt.Sprintf("![alt](%s)", imgServer.URL),
+		"https://example.com/page": "![alt](http://not-a-real-server.example/nonexistent.jpg)",
 	}
 
 	refs := collectImageRefs(bodies)

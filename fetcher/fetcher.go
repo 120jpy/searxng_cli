@@ -2,11 +2,11 @@ package fetcher
 
 import (
 	"context"
-	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
@@ -240,7 +240,6 @@ func downloadImages(refs []imageRef, tempDir string, timeoutSec, concurrency int
 			defer f.Close()
 
 			if _, err := io.Copy(f, resp.Body); err != nil {
-				f.Close()
 				os.Remove(path)
 				return
 			}
@@ -304,6 +303,6 @@ func extFromContentType(ct string) string {
 
 func randomDirName() string {
 	b := make([]byte, 8)
-	_, _ = rand.Read(b)
+	rand.Read(b)
 	return hex.EncodeToString(b)
 }
