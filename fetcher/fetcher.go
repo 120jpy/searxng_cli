@@ -90,7 +90,7 @@ func fetchPage(browser *rod.Browser, rawURL string, timeoutSec int) string {
 			'[class*="overlay"]', '[id*="overlay"]',
 			'[class*="modal"]', '[id*="modal"]',
 			'aside', 'dialog',
-			'nav', 'header', 'footer',
+			'nav',
 			'script', 'style', 'noscript', 'svg', 'canvas',
 			'form', 'button', 'input', 'select', 'textarea',
 			'iframe',
