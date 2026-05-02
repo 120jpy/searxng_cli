@@ -25,6 +25,10 @@ func FormatResults(results []model.Result, format Format, maxResults int) string
 		results = results[:maxResults]
 	}
 
+	if (format == FormatTable || format == FormatURLs) && hasBody(results) {
+		return formatCompact(results)
+	}
+
 	switch format {
 	case FormatCompact:
 		return formatCompact(results)
@@ -77,6 +81,7 @@ func formatJSON(results []model.Result) string {
 		Content  string `json:"content"`
 		Category string `json:"category"`
 		Engine   string `json:"engine"`
+		Body     string `json:"body,omitempty"`
 	}
 	raw := make([]rawResult, len(results))
 	for i, r := range results {
@@ -86,10 +91,20 @@ func formatJSON(results []model.Result) string {
 			Content:  r.Snippet,
 			Category: r.Category,
 			Engine:   r.Engine,
+			Body:     r.Body,
 		}
 	}
 	data, _ := json.MarshalIndent(raw, "", "  ")
 	return string(data)
+}
+
+func hasBody(results []model.Result) bool {
+	for _, r := range results {
+		if r.Body != "" {
+			return true
+		}
+	}
+	return false
 }
 
 func truncate(s string, maxLen int) string {

@@ -50,15 +50,15 @@ func fetchPage(browser *rod.Browser, rawURL string, timeoutSec int) string {
 		return fmt.Sprintf("[error: invalid URL: %s]", err)
 	}
 
-	page, err := browser.Page(proto.TargetCreateTarget{URL: parsed.String()})
+	page, err := browser.Page(proto.TargetCreateTarget{})
 	if err != nil {
 		return fmt.Sprintf("[error: %s]", err)
 	}
-	defer page.Close()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSec)*time.Second)
 	defer cancel()
 	page = page.Context(ctx)
+	defer page.Close()
 
 	if err := page.Navigate(parsed.String()); err != nil {
 		return fmt.Sprintf("[error: navigate: %s]", err)

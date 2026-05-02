@@ -77,6 +77,54 @@ func TestMaxResults(t *testing.T) {
 	}
 }
 
+func TestCompactFormatWithBody(t *testing.T) {
+	results := []model.Result{
+		{Title: "T1", URL: "https://a.com", Snippet: "s1", Category: "general", Engine: "google", Body: "Hello\nWorld"},
+		{Title: "T2", URL: "https://b.com", Snippet: "s2", Category: "news", Engine: "duckduckgo"},
+	}
+	out := FormatResults(results, FormatCompact, 0)
+	lines := strings.Split(strings.TrimSpace(out), "\n")
+	if len(lines) != 2 {
+		t.Fatalf("got %d lines, want 2", len(lines))
+	}
+	if !strings.Contains(lines[0], "\"b\":\"Hello") {
+		t.Fatalf("first line missing body key 'b': %s", lines[0])
+	}
+	if strings.Contains(lines[1], "\"b\"") {
+		t.Fatalf("second line should NOT have body key (omitempty), got: %s", lines[1])
+	}
+}
+
+func TestJSONFormatWithBody(t *testing.T) {
+	results := []model.Result{
+		{Title: "T1", URL: "https://a.com", Snippet: "s1", Category: "general", Engine: "google", Body: "Hello World"},
+	}
+	out := FormatResults(results, FormatJSON, 0)
+	if !strings.Contains(out, "\"body\": \"Hello World\"") && !strings.Contains(out, "\"body\": \"Hello") {
+		t.Fatalf("json should include body key: %s", out)
+	}
+}
+
+func TestTableAutoSwitchToCompactWithBody(t *testing.T) {
+	results := []model.Result{
+		{Title: "T1", URL: "https://a.com", Snippet: "s1", Category: "general", Engine: "google", Body: "content"},
+	}
+	out := FormatResults(results, FormatTable, 0)
+	if !strings.Contains(out, "\"t\":\"") || !strings.Contains(out, "\"b\":\"content\"") {
+		t.Fatalf("table with body should auto-switch to compact: %s", out)
+	}
+}
+
+func TestURLsAutoSwitchToCompactWithBody(t *testing.T) {
+	results := []model.Result{
+		{Title: "T1", URL: "https://a.com", Snippet: "s1", Category: "general", Engine: "google", Body: "content"},
+	}
+	out := FormatResults(results, FormatURLs, 0)
+	if !strings.Contains(out, "\"t\":\"") || !strings.Contains(out, "\"b\":\"content\"") {
+		t.Fatalf("urls with body should auto-switch to compact: %s", out)
+	}
+}
+
 func TestTruncate(t *testing.T) {
 	tests := []struct {
 		input   string
