@@ -68,8 +68,7 @@ var searchCmd = &cobra.Command{
 			for i, r := range results {
 				urls[i] = r.URL
 			}
-			bodies, cleanup := fetcher.FetchURLs(urls, searchFlags.fetchTimeout, searchFlags.fetchConcurrency)
-			defer cleanup()
+			bodies := fetcher.FetchURLs(urls, searchFlags.fetchTimeout, searchFlags.fetchConcurrency)
 			for i, r := range results {
 				if body, ok := bodies[r.URL]; ok {
 					results[i].Body = body

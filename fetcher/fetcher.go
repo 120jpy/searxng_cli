@@ -2,16 +2,8 @@ package fetcher
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
-	"io"
-	"net/http"
 	"net/url"
-	"os"
-	"path/filepath"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -22,7 +14,7 @@ import (
 	md "github.com/JohannesKaufmann/html-to-markdown"
 )
 
-func FetchURLs(urls []string, timeoutSec, concurrency int) (map[string]string, func()) {
+func FetchURLs(urls []string, timeoutSec, concurrency int) map[string]string {
 	result := make(map[string]string, len(urls))
 	var mu sync.Mutex
 	sem := make(chan struct{}, concurrency)
@@ -46,19 +38,7 @@ func FetchURLs(urls []string, timeoutSec, concurrency int) (map[string]string, f
 		}(u)
 	}
 	wg.Wait()
-
-	cleanup := func() {}
-	imageRefs := collectImageRefs(result)
-	if len(imageRefs) > 0 {
-		tempDir := filepath.Join(os.TempDir(), "searxng-cli-images", randomDirName())
-		os.MkdirAll(tempDir, 0755)
-		cleanup = func() { os.RemoveAll(tempDir) }
-
-		pathMap := downloadImages(imageRefs, tempDir, timeoutSec, concurrency)
-		replaceImageURLs(result, imageRefs, pathMap)
-	}
-
-	return result, cleanup
+	return result
 }
 
 func fetchPage(browser *rod.Browser, rawURL string, timeoutSec int) string {
@@ -159,145 +139,4 @@ func fetchPage(browser *rod.Browser, rawURL string, timeoutSec int) string {
 	}
 
 	return strings.TrimSpace(markdown)
-}
-
-var imageRe = regexp.MustCompile(`!\[([^\]]*)\]\(([^)]+)\)`)
-
-type imageRef struct {
-	pageURL  string
-	imageURL string
-	altText  string
-}
-
-func collectImageRefs(bodies map[string]string) []imageRef {
-	var refs []imageRef
-	seen := make(map[string]bool)
-	for pageURL, body := range bodies {
-		base, err := url.Parse(pageURL)
-		if err != nil {
-			continue
-		}
-		matches := imageRe.FindAllStringSubmatch(body, -1)
-		for _, m := range matches {
-			altText := m[1]
-			imgURL := m[2]
-			parsed, err := url.Parse(imgURL)
-			if err != nil {
-				continue
-			}
-			resolved := base.ResolveReference(parsed)
-			absURL := resolved.String()
-			if seen[absURL] {
-				continue
-			}
-			seen[absURL] = true
-			refs = append(refs, imageRef{
-				pageURL:  pageURL,
-				imageURL: absURL,
-				altText:  altText,
-			})
-		}
-	}
-	return refs
-}
-
-func downloadImages(refs []imageRef, tempDir string, timeoutSec, concurrency int) map[string]string {
-	pathMap := make(map[string]string, len(refs))
-	var mu sync.Mutex
-	var wg sync.WaitGroup
-	sem := make(chan struct{}, concurrency)
-	client := &http.Client{Timeout: time.Duration(timeoutSec) * time.Second}
-
-	for _, ref := range refs {
-		wg.Add(1)
-		sem <- struct{}{}
-		go func(ref imageRef) {
-			defer wg.Done()
-			defer func() { <-sem }()
-
-			resp, err := client.Get(ref.imageURL)
-			if err != nil {
-				return
-			}
-			defer resp.Body.Close()
-
-			if resp.StatusCode != http.StatusOK {
-				return
-			}
-
-			contentType := resp.Header.Get("Content-Type")
-			ext := extFromContentType(contentType)
-			hash := sha256.Sum256([]byte(ref.imageURL))
-			filename := hex.EncodeToString(hash[:]) + ext
-			path := filepath.Join(tempDir, filename)
-
-			f, err := os.Create(path)
-			if err != nil {
-				return
-			}
-			defer f.Close()
-
-			io.Copy(f, resp.Body)
-
-			mu.Lock()
-			pathMap[ref.imageURL] = path
-			mu.Unlock()
-		}(ref)
-	}
-	wg.Wait()
-	return pathMap
-}
-
-func replaceImageURLs(bodies map[string]string, refs []imageRef, pathMap map[string]string) {
-	for pageURL, body := range bodies {
-		base, _ := url.Parse(pageURL)
-		replaced := imageRe.ReplaceAllStringFunc(body, func(match string) string {
-			parts := imageRe.FindStringSubmatch(match)
-			if len(parts) < 3 {
-				return match
-			}
-			altText := parts[1]
-			imgURL := parts[2]
-
-			parsed, err := url.Parse(imgURL)
-			if err != nil {
-				return match
-			}
-			resolved := base.ResolveReference(parsed)
-			absURL := resolved.String()
-
-			if localPath, ok := pathMap[absURL]; ok {
-				return fmt.Sprintf("![%s](%s)", altText, localPath)
-			}
-			return fmt.Sprintf("[image failed: %s]", absURL)
-		})
-		bodies[pageURL] = replaced
-	}
-}
-
-func extFromContentType(ct string) string {
-	switch {
-	case strings.Contains(ct, "image/jpeg"):
-		return ".jpg"
-	case strings.Contains(ct, "image/png"):
-		return ".png"
-	case strings.Contains(ct, "image/gif"):
-		return ".gif"
-	case strings.Contains(ct, "image/svg"):
-		return ".svg"
-	case strings.Contains(ct, "image/webp"):
-		return ".webp"
-	case strings.Contains(ct, "image/x-icon"), strings.Contains(ct, "image/vnd.microsoft.icon"):
-		return ".ico"
-	case strings.Contains(ct, "image/bmp"):
-		return ".bmp"
-	default:
-		return ".bin"
-	}
-}
-
-func randomDirName() string {
-	b := make([]byte, 8)
-	_, _ = rand.Read(b)
-	return hex.EncodeToString(b)
 }
